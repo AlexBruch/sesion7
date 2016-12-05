@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.widget.Toast;
@@ -24,8 +25,6 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final int CONNECTION_TIMEOUT = 10000;
-    public static final int READ_TIMEOUT = 15000;
     private RecyclerView recyclerView;
     private AdapterItem adapterItem;
 
@@ -55,20 +54,24 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String... strings) {
             try{
+
+                /** DESCARREGAR INFO JSON **/
                 urlJSON = new URL("http://www.v2msoft.com/curso-android/ws/lista_eventos_abiertos.php");
             }catch (MalformedURLException e) {
                 e.printStackTrace();
                 return e.toString();
             }try{
                 connection = (HttpURLConnection) urlJSON.openConnection();
-                connection.setReadTimeout(READ_TIMEOUT);
-                connection.setConnectTimeout(CONNECTION_TIMEOUT);
                 connection.setRequestMethod("GET");
 
+                /** PER CONFIRMAR QUE REBEM LA INFO **/
                 connection.setDoInput(true);
+
             }catch (IOException e1) {
+
                 e1.printStackTrace();
                 return e1.toString();
+
             }try{
                 int response_code = connection.getResponseCode();
 
@@ -81,7 +84,6 @@ public class MainActivity extends AppCompatActivity {
                     while ((line = bufferedReader.readLine()) != null) {
                         stringBuilder.append(line);
                     }
-
                     return (stringBuilder.toString());
                 } else {
                     return ("Fallo de connexión");
@@ -98,9 +100,11 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String string) {
             progressDialog.dismiss();
             List<ItemList> info = new ArrayList<>();
+            LinearLayoutManager layoutManager = new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.VERTICAL, false);
 
             progressDialog.dismiss();
             try{
+                /** TREIEM LA INFO DEL JSON I LA POSEM EN UN ARRAYLIST COM SI FOS UN OBJECTE **/
                 JSONArray jsonArray = new JSONArray(string);
 
                 for(int x=0;x<jsonArray.length();x++) {
@@ -108,15 +112,20 @@ public class MainActivity extends AppCompatActivity {
                     ItemList itemList = new ItemList();
                     itemList.name = jsonObject.getString("nombre");
                     itemList.details = jsonObject.getString("descripcion");
-                    itemList.price = jsonObject.getInt("precio");
+                    itemList.price = jsonObject.getString("precio");
 
                     info.add(itemList);
                 }
-
+                /** PASSEM LA INFO AL RECYCLERVIEW **/
                 recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
                 adapterItem = new AdapterItem(MainActivity.this, info);
                 recyclerView.setAdapter(adapterItem);
                 recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+
+                DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(recyclerView.getContext(), layoutManager.getOrientation());
+                recyclerView.addItemDecoration(dividerItemDecoration);
+
+
             } catch (JSONException e) {
                 Toast.makeText(MainActivity.this, e.toString(), Toast.LENGTH_LONG).show();
             }

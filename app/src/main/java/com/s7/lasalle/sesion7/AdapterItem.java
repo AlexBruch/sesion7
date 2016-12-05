@@ -19,15 +19,16 @@ public class AdapterItem extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
     private LayoutInflater inflater;
     List<ItemList> info = Collections.emptyList();
-    ItemList current;
-    int currentPos=0;
 
     /** ADAPTADOR PER CONTEXT I INFO DE MainActivity **/
+
     public AdapterItem(Context context, List<ItemList> info) {
         this.context = context;
         this.info = info;
         inflater = LayoutInflater.from(context);
     }
+
+    /** PER OMPLIR EL LAYOUT QUAN TENIM EL VIEWHOLDER **/
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -36,10 +37,14 @@ public class AdapterItem extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return holder;
     }
 
+    /** ENLLACEM L'INFORMACIÓ **/
+
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         MyHolder myHolder = (MyHolder) holder;
+        //Pillem posició
         ItemList current = info.get(position);
+        //Enllacem info de la llista
         myHolder.name.setText(current.name);
         myHolder.details.setText(current.details);
         myHolder.price.setText(current.price);
@@ -49,6 +54,8 @@ public class AdapterItem extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public int getItemCount() {
         return info.size();
     }
+
+    /** CONSTRUCTOR PER ELS TEXTVIEW **/
 
     public class MyHolder extends RecyclerView.ViewHolder{
         TextView name, details, price;

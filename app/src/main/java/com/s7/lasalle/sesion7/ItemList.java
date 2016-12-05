@@ -7,6 +7,6 @@ package com.s7.lasalle.sesion7;
 public class ItemList {
      public String name;
      public String details;
-     public int price;
+     public String price;
 }
 
