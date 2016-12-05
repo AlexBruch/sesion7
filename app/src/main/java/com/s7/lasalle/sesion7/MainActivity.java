@@ -1,103 +1,126 @@
 package com.s7.lasalle.sesion7;
 
+import android.app.ProgressDialog;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    RecyclerView List;
-    private ArrayList<ItemList> itemList;
+    public static final int CONNECTION_TIMEOUT = 10000;
+    public static final int READ_TIMEOUT = 15000;
+    private RecyclerView recyclerView;
+    private AdapterItem adapterItem;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        items();
+        new Connection().execute();
     }
 
-    public void items() {
-        List = (RecyclerView) findViewById(R.id.recycler_view);
-        List.setHasFixedSize(true);
+    private class Connection extends AsyncTask<String, String, String>{
 
-        itemList = new ArrayList<>();
-        itemList.add(new ItemList("WAZAAAA", "wea", "4"));
-        itemList.add(new ItemList("WAZAAAAAA", "weaaa", "5"));
+        ProgressDialog progressDialog = new ProgressDialog(MainActivity.this);
+        HttpURLConnection connection;
+        URL urlJSON = null;
 
-        Adapter adapter = new Adapter(itemList);
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
 
-        LinearLayoutManager layoutManager = new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.VERTICAL, false);
-        List.setLayoutManager(layoutManager);
-
-        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(List.getContext(), layoutManager.getOrientation());
-        List.addItemDecoration(dividerItemDecoration);
-
-        List.setItemAnimator(new DefaultItemAnimator());
-        List.setAdapter(adapter);
-    }
-
-    public static class Adapter extends RecyclerView.Adapter<Adapter.ItemViewHolder> {
-
-        private OnItemClickListener onItemClickListener;
-        private ArrayList<ItemList> listaItems;
-
-        public Adapter(ArrayList<ItemList> data) {this.listaItems = data;}
-
-        public ItemViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_list, parent, false);
-            ItemViewHolder viewHolder = new ItemViewHolder(view);
-
-            return viewHolder;
-        }
-
-        public void onBindViewHolder(ItemViewHolder holder, int position) {
-            final ItemList itemList = listaItems.get(position);
-            holder.bindItem(itemList);
+            progressDialog.setMessage("Descargando datos...");
+            progressDialog.setCancelable(false);
+            progressDialog.show();
         }
 
         @Override
-        public int getItemCount() {
-            return listaItems.size();
+        protected String doInBackground(String... strings) {
+            try{
+                urlJSON = new URL("http://www.v2msoft.com/curso-android/ws/lista_eventos_abiertos.php");
+            }catch (MalformedURLException e) {
+                e.printStackTrace();
+                return e.toString();
+            }try{
+                connection = (HttpURLConnection) urlJSON.openConnection();
+                connection.setReadTimeout(READ_TIMEOUT);
+                connection.setConnectTimeout(CONNECTION_TIMEOUT);
+                connection.setRequestMethod("GET");
+
+                connection.setDoInput(true);
+            }catch (IOException e1) {
+                e1.printStackTrace();
+                return e1.toString();
+            }try{
+                int response_code = connection.getResponseCode();
+
+                if(response_code == HttpURLConnection.HTTP_OK) {
+                    InputStream input = connection.getInputStream();
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+
+                    while ((line = bufferedReader.readLine()) != null) {
+                        stringBuilder.append(line);
+                    }
+
+                    return (stringBuilder.toString());
+                } else {
+                    return ("Fallo de connexión");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                return e.toString();
+            } finally {
+                connection.disconnect();
+            }
         }
 
-        public class ItemViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-            private TextView Name;
-            private TextView Description;
-            private TextView Price;
+        @Override
+        protected void onPostExecute(String string) {
+            progressDialog.dismiss();
+            List<ItemList> info = new ArrayList<>();
 
-            public ItemViewHolder(View view) {
-                super(view);
+            progressDialog.dismiss();
+            try{
+                JSONArray jsonArray = new JSONArray(string);
 
-                Name = (TextView) view.findViewById(R.id.name);
-                Description = (TextView) view.findViewById(R.id.details);
-                Price = (TextView) view.findViewById(R.id.price);
+                for(int x=0;x<jsonArray.length();x++) {
+                    JSONObject jsonObject = jsonArray.getJSONObject(x);
+                    ItemList itemList = new ItemList();
+                    itemList.name = jsonObject.getString("nombre");
+                    itemList.details = jsonObject.getString("descripcion");
+                    itemList.price = jsonObject.getInt("precio");
 
-                view.setOnClickListener(this);
-            }
+                    info.add(itemList);
+                }
 
-            public void bindItem(ItemList r) {
-                Name.setText(r.getName());
-                Description.setText(r.getDetails());
-                Price.setText(r.getPrice());
-            }
-
-            @Override
-            public void onClick(View view) {
-                if(onItemClickListener != null) onItemClickListener.onItemClick(view, getAdapterPosition());
+                recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+                adapterItem = new AdapterItem(MainActivity.this, info);
+                recyclerView.setAdapter(adapterItem);
+                recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+            } catch (JSONException e) {
+                Toast.makeText(MainActivity.this, e.toString(), Toast.LENGTH_LONG).show();
             }
         }
     }
-    public interface OnItemClickListener {
-        void onItemClick(View v, int position);
-    }
+
 }
