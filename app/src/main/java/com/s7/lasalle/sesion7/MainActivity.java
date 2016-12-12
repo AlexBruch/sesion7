@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
             try{
 
                 /** DESCARREGAR INFO JSON **/
+
                 urlJSON = new URL("http://www.v2msoft.com/curso-android/ws/lista_eventos_abiertos.php");
             }catch (MalformedURLException e) {
                 e.printStackTrace();
@@ -65,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
                 connection.setRequestMethod("GET");
 
                 /** PER CONFIRMAR QUE REBEM LA INFO **/
+
                 connection.setDoInput(true);
 
             }catch (IOException e1) {
@@ -105,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
             progressDialog.dismiss();
             try{
                 /** TREIEM LA INFO DEL JSON I LA POSEM EN UN ARRAYLIST COM SI FOS UN OBJECTE **/
+
                 JSONArray jsonArray = new JSONArray(string);
 
                 for(int x=0;x<jsonArray.length();x++) {
@@ -116,7 +119,9 @@ public class MainActivity extends AppCompatActivity {
 
                     info.add(itemList);
                 }
+
                 /** PASSEM LA INFO AL RECYCLERVIEW **/
+
                 recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
                 adapterItem = new AdapterItem(MainActivity.this, info);
                 recyclerView.setAdapter(adapterItem);
